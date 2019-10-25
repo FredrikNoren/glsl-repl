@@ -163,7 +163,7 @@ function App() {
         }}
         />
       <div className="Header">
-        glsl-repl by <a href="https://twitter.com/jfnoren">@jfnoren</a>. Find it useful? <a href="https://www.patreon.com/fredriknoren">Become a Patron!</a>
+        glsl-repl by <a href="https://twitter.com/jfnoren">@jfnoren</a>. Code on <a href="https://github.com/FredrikNoren/glsl-repl">GitHub</a>. Find it useful? <a href="https://www.patreon.com/fredriknoren">Become a Patron!</a>
       </div>
       <div className="Result">{result}</div>
     </div>
