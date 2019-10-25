@@ -1,6 +1,7 @@
 {
   "name": "glsl-repl",
   "version": "0.1.0",
+  "homepage": "https://FredrikNoren.github.io/glsl-repl",
   "private": true,
   "dependencies": {
     "@types/codemirror": "^0.0.79",
@@ -10,6 +11,7 @@
     "@types/react-dom": "16.9.3",
     "codemirror": "^5.49.2",
     "codemirror-one-dark-theme": "^1.1.1",
+    "gh-pages": "^2.1.1",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-scripts": "3.2.0",
@@ -19,7 +21,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
   },
   "eslintConfig": {
     "extends": "react-app"
