@@ -4,7 +4,11 @@
   flex-direction: column;
   margin: 20px;
   color: #bbb;
-  position: relative;
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  right: 0px;
 }
 .Header {
   font-size: 12px;
@@ -16,8 +20,13 @@
 a {
   color: #eaea70;
 }
+.CodeMirrorContainer, .CodeMirrorContainer > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 .CodeMirror {
-  height: auto;
+  flex: 1;
 }
 .Result {
   font-size: 25px;
