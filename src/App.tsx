@@ -2,35 +2,27 @@ import React from 'react';
 import { CodeMirror } from './CodeMirror';
 import './App.css';
 
-export type Result<T, E=string> = ResultOk<T> | ResultError<E>;
-export interface ResultOk<T> {
-  Ok: T;
-}
-export interface ResultError<E> {
-  Err: E;
-}
-export function isErr<T, E>(result: Result<T, E>): result is ResultError<E> {
-  return result.hasOwnProperty('Err');
-}
+type Result<T> = { result: 'ok', value: T } | { result: 'err', message: string };
 
-function shaderFromSource(gl: WebGL2RenderingContext, type: 'vertex' | 'fragment', sourceCode: string): Result<WebGLShader, string> {
+function shaderFromSource(gl: WebGL2RenderingContext, type: 'vertex' | 'fragment', sourceCode: string):
+  { result: 'ok', value: WebGLShader } | { result: 'err', message: string } {
   const shader = gl.createShader(type === 'vertex' ? gl.VERTEX_SHADER : gl.FRAGMENT_SHADER);
   if (!shader) {
-    return { Err: 'Failed to create shader' };
+    return { result: 'err', message: 'Failed to create shader' };
   }
   gl.shaderSource(shader, sourceCode);
   gl.compileShader(shader);
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    return { Err: gl.getShaderInfoLog(shader) || 'Unknown shader error' };
+    return { result: 'err', message: gl.getShaderInfoLog(shader) || 'Unknown shader error' };
   }
-  return { Ok: shader };
+  return { result: 'ok', value: shader };
 }
 
-function createProgram(gl: WebGL2RenderingContext, shaders: WebGLShader[]): Result<WebGLProgram, string> {
+function createProgram(gl: WebGL2RenderingContext, shaders: WebGLShader[]): Result<WebGLProgram> {
   const program = gl.createProgram();
   if (!program) {
-    return { Err: 'Failed to create program' };
+    return { result: 'err', message: 'Failed to create program' };
   }
   for (const shader of shaders) {
     gl.attachShader(program, shader);
@@ -38,9 +30,9 @@ function createProgram(gl: WebGL2RenderingContext, shaders: WebGLShader[]): Resu
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    return { Err: gl.getProgramInfoLog(program) || 'Unknown linking error' };
+    return { result: 'err', message: gl.getProgramInfoLog(program) || 'Unknown linking error' };
   }
-  return { Ok: program };
+  return { result: 'ok', value: program };
 }
 
 class TriangleStripMesh {
@@ -106,15 +98,15 @@ function run(shader: string) {
   const quad = TriangleStripMesh.quad(gl);
   const vs = shaderFromSource(gl, 'vertex', QuadVertexShader);
   const fs = shaderFromSource(gl, 'fragment', shader);
-  if (isErr(vs)) {
-    return vs.Err;
+  if (vs.result === 'err') {
+    return vs.message;
   }
-  if (isErr(fs)) {
-    return fs.Err;
+  if (fs.result === 'err') {
+    return fs.message;
   }
-  const program = createProgram(gl, [vs.Ok, fs.Ok]);
-  if (isErr(program)) {
-    return program.Err;
+  const program = createProgram(gl, [vs.value, fs.value]);
+  if (program.result === 'err') {
+    return program.message;
   }
   const outputTex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, outputTex);
@@ -129,9 +121,9 @@ function run(shader: string) {
   gl.disable(gl.BLEND);
   gl.disable(gl.CULL_FACE);
   gl.disable(gl.DEPTH_TEST);
-  gl.useProgram(program.Ok);
+  gl.useProgram(program.value);
 
-  const noiseSampler = gl.getUniformLocation(program.Ok, 'noise');
+  const noiseSampler = gl.getUniformLocation(program.value, 'noise');
   if (noiseSampler) {
     const noiseTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, noiseTex);
