@@ -85,11 +85,10 @@ void main() {
 }
 `;
 
-function createTexture(gl: WebGL2RenderingContext) {
-  const tex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
-  return tex;
+const NoiseWidth = 128;
+const NoiseData = new Float32Array(NoiseWidth*NoiseWidth*4).fill(0);
+for (let i = 0; i < NoiseData.length; i++) {
+  NoiseData[i] = Math.random();
 }
 
 function run(shader: string) {
@@ -117,32 +116,52 @@ function run(shader: string) {
   if (isErr(program)) {
     return program.Err;
   }
-  const tex = createTexture(gl);
+  const outputTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, outputTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, 1, 1, 0, gl.RGBA, gl.FLOAT, null);
   const fb = gl.createFramebuffer();
   gl.pixelStorei(gl.PACK_ALIGNMENT, 4);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
   gl.viewport(0, 0, 1, 1);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, outputTex, 0);
   gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
   gl.disable(gl.BLEND);
   gl.disable(gl.CULL_FACE);
   gl.disable(gl.DEPTH_TEST);
   gl.useProgram(program.Ok);
+
+  const noiseSampler = gl.getUniformLocation(program.Ok, 'noise');
+  if (noiseSampler) {
+    const noiseTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, noiseTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, NoiseWidth, NoiseWidth, 0, gl.RGBA, gl.FLOAT, NoiseData);
+    gl.uniform1i(noiseSampler, 0);
+    const nearestSampler = gl.createSampler()!;
+    gl.samplerParameteri(nearestSampler, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.samplerParameteri(nearestSampler, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.samplerParameteri(nearestSampler, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.samplerParameteri(nearestSampler, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.bindSampler(0, nearestSampler);
+  }
+
   quad.bind();
   quad.draw();
   gl.readBuffer(gl.COLOR_ATTACHMENT0);
   const data = new Float32Array(4);
   gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, data);
-  return Array.from(data).map(x => '' + x).join(', ');
+  const res = Array.from(data).map(x => '' + x).join(', ');
+  canvas.remove();
+  return res;
 }
 
 const DefaultShader = `#version 300 es
 precision highp float;
 out vec4 res;
+uniform sampler2D noise;
 
 void main() {
-  res = vec4(2.0);
+  res = texelFetch(noise, ivec2(0), 0) + 1.0;
 }
 `
 
